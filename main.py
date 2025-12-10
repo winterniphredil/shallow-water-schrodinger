@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 
 from params import ShallowWaterParams
 from schemes import NLSESplitStepScheme
-from bathymetry import flat_bottom, add_initial_condition, gaussian, single_well, gaussian_well, moving_gaussian_well
+from bathymetry import flat_bottom, add_initial_condition, gaussian, single_well, gaussian_well, moving_gaussian_well, \
+    moving_sine_wave, two_wells
 
 
 def init(params, initial_condition, history=True):
@@ -84,16 +85,40 @@ def plot_evolution(t: np.ndarray[float], x: np.ndarray[float], eta_0, eta: np.nd
     plt.show()
 
 
+def plot_heatmap(eta, eta_0, x, t):
+    eta_0_realised = eta_0(np.reshape(x, (1,) + x.shape), np.reshape(t, t.shape + (1,)))
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
+
+    # Left: f
+    im0 = axes[0].imshow(eta, aspect='auto', origin='lower')
+    axes[0].set_title('f')
+    axes[0].set_xlabel('x-index')
+    axes[0].set_ylabel('t-index')
+    fig.colorbar(im0, ax=axes[0])
+
+    # Right: g
+    im1 = axes[1].imshow(-eta_0_realised, aspect='auto', origin='lower')
+    axes[1].set_title('g')
+    axes[1].set_xlabel('x-index')
+    fig.colorbar(im1, ax=axes[1])
+
+    plt.tight_layout()
+    plt.show()
+
+
 def main():
-    T = 30
-    L = 100
-    nt = 300
-    nx = 300
+    T = 60
+    L = 200
+    nt = 600
+    nx = 200
     params = ShallowWaterParams(T, L, nt, nx, 1.)
     scheme = NLSESplitStepScheme(params)
     # eta_0 = flat_bottom(1.)
-    # eta_0 = moving_gaussian_well(1., 1.5, L / 4, 1., 0.5)
-    eta_0 = moving_gaussian_well(1.1, 1., L / 4, 1., 0.5)
+    # eta_0 = moving_gaussian_well(2., 1.5, L / 4, 1., 0.5)
+    eta_0 = two_wells(2., 1.5, L/4, L/4 + 30, 1., 0.5)
+    # eta_0 = moving_gaussian_well(1.1, 1., L / 4, 1., 0.5)
+    # eta_0 = moving_sine_wave(0.05, 1., L, 5, 0.5)
     # initial_condition = add_initial_condition(eta_0, gaussian(3 * L / 4, 1.))
     initial_condition = add_initial_condition(eta_0, lambda x: 0)
     x, t, eta_0_realised, history = init(params, initial_condition)
@@ -102,7 +127,8 @@ def main():
 
     # eta, _ = inverse_madelung_transform(history, nx, params.dx)
     eta = np.abs(history) ** 2
-    plot_evolution(t, x, eta_0, eta, "Surface height evolution with flat bottom and initial gaussian")
+    # plot_evolution(t, x, eta_0, eta, "Surface height evolution with flat bottom and initial gaussian")
+    plot_heatmap(eta, eta_0, x, t)
 
 
 if __name__ == '__main__':
