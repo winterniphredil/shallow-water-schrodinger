@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from params import ShallowWaterParams
 from schemes import NLSESplitStepScheme
 from bathymetry import flat_bottom, add_initial_condition, gaussian, single_well, gaussian_well, \
-    sine_wave, two_wells
+    sine_wave, two_wells, accelerating_gaussian
 
 
 def init(params, initial_condition, history=True):
@@ -117,10 +117,11 @@ def main():
     # eta_0 = flat_bottom(1.)
     # eta_0 = gaussian_well(2., 1.5, L / 4, 1., velocity=0.5)
     # eta_0 = two_wells(2., 1.5, L/4, L/4 + 30, 1., velocity=0.5)
-    eta_0 = gaussian_well(1.1, 1., L / 4, 1., velocity=0.5)
+    # eta_0 = gaussian_well(1.1, 1., L / 4, 1., velocity=0.5)
     # eta_0 = sine_wave(0.05, 1., L, 5, velocity=0.5)
     # initial_condition = add_initial_condition(eta_0, gaussian(3 * L / 4, 1.))
     # eta_0 = gaussian_well(1.1, 1., L / 4, 1., velocity=0.5)
+    eta_0 = accelerating_gaussian(1.1, 1., L/4, 1., 0., 0.03)
     initial_condition = add_initial_condition(eta_0, lambda x: 0)  # Start from flat surface
     x, t, eta_0_realised, history = init(params, initial_condition)
     psi_0 = madelung_transform(eta_0_realised, 0.)  # Assuming starting from rest
@@ -128,8 +129,8 @@ def main():
 
     # eta, _ = inverse_madelung_transform(history, nx, params.dx)
     eta = np.abs(history) ** 2
-    # plot_evolution(t, x, eta_0, eta, "Surface height evolution with flat bottom and initial gaussian")
-    plot_heatmap(eta, eta_0, x, t)
+    plot_evolution(t, x, eta_0, eta, "Surface height evolution with flat bottom and initial gaussian")
+    # plot_heatmap(eta, eta_0, x, t)
 
 
 if __name__ == '__main__':

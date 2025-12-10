@@ -50,3 +50,10 @@ def gaussian(mu, sigma):
         return 1 / np.sqrt(2 * np.pi * sigma) * np.exp(-(x - mu) ** 2 / (2 * sigma ** 2))
 
     return ret
+
+
+def accelerating_gaussian(min_depth: float, max_depth: float, position, sigma, v_0, a):
+    def ret(x, t):
+        return gaussian_well(min_depth, max_depth, position, sigma)(x - v_0 * t - a / 2 * t**2, t)
+
+    return ret
