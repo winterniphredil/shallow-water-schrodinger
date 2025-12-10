@@ -22,13 +22,16 @@ def madelung_transform(eta, phi):
     return np.sqrt(eta) * np.exp(1j * phi)
 
 
-# def inverse_madelung_transform(psi, nx, dx):
-#     eta = np.abs(psi) ** 2
-#     phi = np.angle(psi)
-#     k = np.fft.fftfreq(nx, dx)
-#     u = np.fft.ifft(1j * k * np.fft.fft(phi))  # TODO: Deal with endpoint
-#
-#     return eta, u
+def inverse_madelung_transform(psi, nx, dx):
+    eta = np.abs(psi) ** 2
+    phi = np.unwrap(np.angle(psi))
+    u = np.zeros_like(phi)
+    # k = np.fft.fftfreq(nx, dx)
+    # u[:, :-1] = np.fft.ifft(1j * k * np.fft.fft(phi[:, :-1]))
+    # u[:, -1] = u[:, 0]
+    u = (np.roll(phi, [0, -1]) - phi) / dx
+
+    return eta, u
 
 
 def get_ylims(*args):
@@ -85,10 +88,11 @@ def plot_evolution(t: np.ndarray[float], x: np.ndarray[float], eta_0, eta: np.nd
     plt.show()
 
 
-def plot_heatmap(eta, eta_0, x, t):
+def plot_heatmap(x, t, eta, eta_0, u=None):
     eta_0_realised = eta_0(np.reshape(x, (1,) + x.shape), np.reshape(t, t.shape + (1,)))
 
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
+    ncols = 3 if u is not None else 2
+    fig, axes = plt.subplots(1, ncols, figsize=(10, 4), sharey=True)
 
     # Left: Bathymetry
     im0 = axes[0].imshow(- eta_0_realised, aspect='auto', origin='lower')
@@ -97,11 +101,19 @@ def plot_heatmap(eta, eta_0, x, t):
     axes[0].set_ylabel('t-index')
     fig.colorbar(im0, ax=axes[0])
 
-    # Right: Surface Height
+    # Right/middle: Surface Height
     im1 = axes[1].imshow(eta - eta_0_realised, aspect='auto', origin='lower')
     axes[1].set_title('Surface Height')
     axes[1].set_xlabel('x-index')
     fig.colorbar(im1, ax=axes[1])
+
+    if u is not None:
+        # Right: Surface Height
+        im1 = axes[2].imshow(u, aspect='auto', origin='lower')
+        axes[2].set_title('Horizontal Velocity')
+        axes[2].set_xlabel('x-index')
+        fig.colorbar(im1, ax=axes[2])
+
 
     plt.tight_layout()
     plt.show()
@@ -127,10 +139,9 @@ def main():
     psi_0 = madelung_transform(eta_0_realised, 0.)  # Assuming starting from rest
     _ = scheme(psi_0, eta_0=eta_0, history=history)
 
-    # eta, _ = inverse_madelung_transform(history, nx, params.dx)
-    eta = np.abs(history) ** 2
-    plot_evolution(t, x, eta_0, eta, "Surface height evolution with flat bottom and initial gaussian")
-    # plot_heatmap(eta, eta_0, x, t)
+    eta, u = inverse_madelung_transform(history, nx, params.dx)
+    # plot_evolution(t, x, eta_0, eta, "Surface height evolution with flat bottom and initial gaussian")
+    plot_heatmap(x, t, eta, eta_0, u)
 
 
 if __name__ == '__main__':
